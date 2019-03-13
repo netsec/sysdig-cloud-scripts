@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-OPTS=`getopt -o si:m:dnh --long set,idp:,meta:,nocreate,delete,help -n 'parse-options' -- "$@"`
-if [ $? != 0 ] ; then
-  echo "Failed parsing options." >&2
-  exit 1
-fi
-
 ENV="../env.sh"
 UTILS="../utils.sh"
 
@@ -19,8 +13,6 @@ METADATA_URL=""
 SSO_KEYWORD="saml"
 SCRIPT_NAME=`basename "$0"`
 
-eval set -- "$OPTS"
-
 function print_usage() {
   echo "Usage: ./${SCRIPT_NAME} [OPTIONS]"
   echo
@@ -30,12 +22,12 @@ function print_usage() {
   echo
   echo "Options:"
 
-  echo "  -s | --set                 Set the specified SAML login config"
-  echo "  -i | --idp okta|onelogin   Use SAML config options based on a supported IDP"
-  echo "  -m | --meta 'URL'          Metadata URL (provided from IDP-side configuration)"
-  echo "  -n | --nocreate            Disable auto-creation of user records upon first successful auth"
-  echo "  -d | --delete              Delete the current SAML login config"
-  echo "  -h | --help                Print this Usage output"
+  echo "  -s    Set the specified SAML login config"
+  echo "  -i    Use SAML config options based on a supported IDP"
+  echo "  -m    Metadata URL (provided from IDP-side configuration)"
+  echo "  -n    Disable auto-creation of user records upon first successful auth"
+  echo "  -d    Delete the current SAML login config"
+  echo "  -h    Print this Usage output"
   exit 1
 }
 
@@ -106,17 +98,21 @@ function set_settings() {
 }
 
 
-while true; do
-  case "$1" in
-    -s | --set ) SET=true; shift ;;
-    -i | --idp ) IDP="$2"; shift; shift ;;
-    -m | --meta ) METADATA_URL="$2"; shift; shift ;;
-    -n | --nocreate ) AUTOCREATE="false"; shift ;;
-    -d | --delete ) DELETE=true; shift ;;
-    -h | --help ) HELP=true; shift ;;
-    -- ) shift; break ;;
-    * ) break ;;
-  esac
+eval "set -- $(getopt sdhni:m: "$@")"
+while [ $# -gt 0 ]
+do
+    case "$1" in
+      (-s) SET=true ;;
+      (-d) DELETE=true ;;
+      (-h) HELP=true ;;
+      (-n) AUTOCREATE="false" ;;
+      (-i) IDP="$IDP $2"; shift;;
+      (-m) METADATA_URL="$METADATA_URL $2"; shift;;
+      (--) shift; break;;
+      (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
+      (*)  break;;
+    esac
+    shift
 done
 
 if [ $HELP = true ] ; then
